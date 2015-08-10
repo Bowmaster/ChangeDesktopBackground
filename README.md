@@ -26,15 +26,20 @@ Running the program with no switches will display the help message.
 
 To run, you must declare, at a minumun either a switch for background file path (-p), or a switch for style (-s).  You may also declare both.
 
-ChangeDesktopBackground.exe                                           #Displays Help
+ChangeDesktopBackground.exe
+#Displays Help
 
-ChangeDesktopBackground.exe -help                                     #Displays Help
+ChangeDesktopBackground.exe -help
+#Displays Help
 
-ChangeDesktopBackground.exe /s:Span                                   #Searchs for wallpaper.bmp in the program's current directory and sets that as the background using the Span style (assuming Windows 8 or higher, otherwise Fill is used for Windows 7 (see above)).
+ChangeDesktopBackground.exe /s:Span
+#Searchs for wallpaper.bmp in the program's current directory and sets that as the background using the Span style (assuming Windows 8 or higher, otherwise Fill is used for Windows 7 (see above)).
 
-ChangeDesktopBackground.exe /p:"C:\Users\Test Pics\Background.jpg"    #Sets the specified file as the background.  Since /s is not specified, the default style of "Fill" is used.
+ChangeDesktopBackground.exe /p:"C:\Users\Test Pics\Background.jpg"
+#Sets the specified file as the background.  Since /s is not specified, the default style of "Fill" is used.
 
-ChangeDesktopBackground.exe -p:"C:\NewBackground.bmp" -s:Centered     #Sets the specified file as the background and uses the "Centered" style.
+ChangeDesktopBackground.exe -p:"C:\NewBackground.bmp" -s:Centered
+#Sets the specified file as the background and uses the "Centered" style.
 
 -Testing-
 This has currently been tested on the following platforms:
