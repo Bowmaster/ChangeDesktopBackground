@@ -10,19 +10,30 @@ Initially, the end goal was to use this to remove bginfo.exe wallpaper brandings
 In addition to being ran through the command or run line, this can also be pushed using an enterprise management suite like SCCM, Altiris, or ManageSoft.
 
 -Switches-
+
 All switches may be used in this format -<switch>:<value> OR /<switch>:<value>
+
 <No Switches> = Help menu
+
 /? OR /h OR /help = Help menu
+
 /s:<style> = The style to set the background too. Blank values will use the "Fill" style.  Acceptable styles are: Titled, Centered, Stretched, Fit, Fill, Span (Windows 8 and higher).  Selecting "Span" on a Windows 7 device will result in a default value of "Fill" being used.
+
 /p:<path to file> = The path to the desired wallpaper file.  Formats can be either .bmp or jpg.  If this value is not specified, a file titled wallpaper.bmp will be searched for in the same directory as the program.  If this file is found, it will be used for the background.  If not, an error code will be returned (1).
 
 -Usage-
 Running the program with no switches will display the help message.
+
 To run, you must declare, at a minumun either a switch for background file path (-p), or a switch for style (-s).  You may also declare both.
+
 ChangeDesktopBackground.exe                                           #Displays Help
+
 ChangeDesktopBackground.exe -help                                     #Displays Help
+
 ChangeDesktopBackground.exe /s:Span                                   #Searchs for wallpaper.bmp in the program's current directory and sets that as the background using the Span style (assuming Windows 8 or higher, otherwise Fill is used for Windows 7 (see above)).
+
 ChangeDesktopBackground.exe /p:"C:\Users\Test Pics\Background.jpg"    #Sets the specified file as the background.  Since /s is not specified, the default style of "Fill" is used.
+
 ChangeDesktopBackground.exe -p:"C:\NewBackground.bmp" -s:Centered     #Sets the specified file as the background and uses the "Centered" style.
 
 -Testing-
