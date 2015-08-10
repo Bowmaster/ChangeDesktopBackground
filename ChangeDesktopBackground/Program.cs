@@ -71,8 +71,8 @@ namespace ChangeDesktopBackground
                 Stream stream = new FileStream(FilePath, FileMode.Open);
       
                 Image img = Image.FromStream(stream);
-                string tempPath = Path.Combine(Path.GetTempPath(), file.Name);
-                img.Save(tempPath, ImageFormat.Bmp);
+                string tempDIR = Path.Combine(Path.GetTempPath(), file.Name);
+                img.Save(tempDIR, ImageFormat.Bmp);
 
                 RegistryKey key = Registry.CurrentUser.OpenSubKey(@"Control Panel\Desktop", true);
                 if (style == Style.Stretched)
@@ -93,10 +93,7 @@ namespace ChangeDesktopBackground
                     key.SetValue(@"TileWallpaper", 1.ToString());
                 }
 
-                SystemParametersInfo(SPI_SETDESKWALLPAPER,
-                    0,
-                    tempPath,
-                    SPIF_UPDATEINIFILE | SPIF_SENDWININICHANGE);
+                SystemParametersInfo(SPI_SETDESKWALLPAPER,0,tempDIR,SPIF_UPDATEINIFILE | SPIF_SENDWININICHANGE);
             }
             catch(SecurityException s)
             {
