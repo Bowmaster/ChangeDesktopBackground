@@ -134,21 +134,6 @@ namespace ChangeDesktopBackground
             if (args.Length ==0)
             {
                 Ref.Help();
-                /*
-                char[] c = { '\'' };
-                string DefaultWallpaper = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location.ToString()).TrimEnd(c) + @"\wallpaper.bmp";
-                if (File.Exists(DefaultWallpaper))
-                {
-                    WP.Set(DefaultWallpaper, Wallpaper.Style.Fill);
-                    Console.WriteLine("No errors detected during execution. Please check your desktop to verify results.");
-                    Environment.Exit(0);
-                }
-                else
-                {
-                    Console.WriteLine("No wallpaper path was specified and wallpaper.bmp could not be found in the same directory. Failed to change wallpaper.");
-                    Environment.Exit(1);
-                }
-                */
             }
             else if (args.Length >= 1 && args.Length <= 2)
             {
