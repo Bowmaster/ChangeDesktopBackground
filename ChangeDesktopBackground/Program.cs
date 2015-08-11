@@ -14,7 +14,7 @@ namespace ChangeDesktopBackground
         {
             try
             {
-                Console.WriteLine("Available Switches (Select only 1)");
+                Console.WriteLine("Available Switches");
                 Console.WriteLine("You may use either a " + "-" + "or " + @"/" + " to declare your switches.");
                 Console.WriteLine("If no switches are passed, the program will search for a file titled wallpaper.bmp and attempt to set the background to that file.");
                 Console.WriteLine("");
@@ -27,11 +27,21 @@ namespace ChangeDesktopBackground
                 Console.WriteLine("");
                 Console.WriteLine("");
                 Console.WriteLine("--Examples--");
-                Console.WriteLine("     changedesktopbackground.exe                                                     Shows this help menu.");
-                Console.WriteLine("     changedesktopbackground.exe /p:C:\\Users\\Admin\\Pictures\\wallpaper.jpg        Makes the selected file the background.  Default style of Fill is used.");
-                Console.WriteLine("     changedesktopbackground.exe /s:Centered                                         Searches for wallpaper.bmp in the program directory and attempts to set it to Centered style.");
-                Console.WriteLine("     changedesktopbackground.exe /p:C:\\Windows\\Temp\\pic.bmp /s:Tiled              Sets the specified file as the wallpaper with the Tiled style.");
-                Console.WriteLine("     changedesktopbackground.exe /help                                               Shows this help menu.");
+                Console.WriteLine("     Shows this help menu.");
+                Console.WriteLine("     changedesktopbackground.exe");
+                Console.WriteLine("");
+                Console.WriteLine("     Makes the selected file the background.  Default style of Fill is used.");
+                Console.WriteLine("     changedesktopbackground.exe /p:C:\\Users\\Admin\\Pictures\\wallpaper.jpg");
+                Console.WriteLine("");
+                Console.WriteLine("     Searches for wallpaper.bmp in the program directory and attempts to set it to Centered style.");
+                Console.WriteLine("     changedesktopbackground.exe /s:Centered");
+                Console.WriteLine("");
+                Console.WriteLine("     Sets the specified file as the wallpaper with the Tiled style.");
+                Console.WriteLine("     changedesktopbackground.exe /p:C:\\Windows\\Temp\\pic.bmp /s:Tiled");
+                Console.WriteLine("");
+                Console.WriteLine("     Shows this help menu.");
+                Console.WriteLine("     changedesktopbackground.exe /help");
+                Environment.Exit(0);
             }
             catch(IOException)
             {
@@ -54,73 +64,134 @@ namespace ChangeDesktopBackground
         public enum Style : int
         {
             Tiled = 0,
-            Centered = 0,
+            Centered = 1,
             Stretched = 2,
             Fit = 6,
             Fill = 10,
             Span = 22
         }
 
-        public void Set(String FilePath, Style style)
+        public void Set(string FilePath, Style style)
         {
             //Modified from StackOverflow answer to this question:  http://stackoverflow.com/questions/1061678/change-desktop-wallpaper-using-code-in-net
             //Thank you!!
-            try
+            bool Retry = false;
+            FileInfo file = new FileInfo(FilePath);
+            string tempFile = Path.Combine(Path.GetTempPath(), file.Name);
+            string AppDataFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + @"\Microsoft\Windows\Themes\TranscodedWallpaper.jpg");
+            do
             {
-                FileInfo file = new FileInfo(FilePath);
-                Stream stream = new FileStream(FilePath, FileMode.Open);
-      
-                Image img = Image.FromStream(stream);
-                string tempDIR = Path.Combine(Path.GetTempPath(), file.Name);
-                img.Save(tempDIR, ImageFormat.Bmp);
+                try
+                {                    
+                    //Attempt to read file.
+                    Stream stream = new FileStream(FilePath, FileMode.Open);
+                    Image img = Image.FromStream(stream);
 
-                RegistryKey key = Registry.CurrentUser.OpenSubKey(@"Control Panel\Desktop", true);
-                if (style == Style.Stretched)
-                {
-                    key.SetValue(@"WallpaperStyle", 2.ToString());
-                    key.SetValue(@"TileWallpaper", 0.ToString());
+                    //Check if the given file name exists in the user's %Temp% directory.  The file will be deleted if it does exist.
+                    if (File.Exists(tempFile))
+                    {
+                        File.Delete(tempFile);
+                    }
+
+                    //Save the image stream to the %Temp% directory as a .jpg.
+                    img.Save(tempFile, ImageFormat.Jpeg);
+
+                    //Check for the default wallpaper file name in the default path.  If a file exists, it will be renamed so that it is not overwritten.  (In this case default = Microsoft default) 
+                    if(File.Exists(AppDataFilePath))
+                    {
+                        File.Move(AppDataFilePath, (AppDataFilePath.Replace("jpeg", "").Replace("jpg", "") + DateTime.Now.ToShortTimeString() + ".jpg"));
+                    }
+
+                    //Copy new wallpaper file to the Microsoft default path.  Existing file will the same name be overwritten.
+                    File.Copy(tempFile, AppDataFilePath, true);
+
+                    //Set deskotp style in registry.
+                    RegistryKey key = Registry.CurrentUser.OpenSubKey(@"Control Panel\Desktop", true);
+                    if (style == Style.Tiled)
+                    {
+                        key.SetValue(@"WallpaperStyle", 0.ToString());
+                        key.SetValue(@"TileWallpaper", 1.ToString());
+                    }
+                    if (style == Style.Centered)
+                    {
+                        key.SetValue(@"WallpaperStyle", 0.ToString());
+                        key.SetValue(@"TileWallpaper", 0.ToString());
+                    }
+                    if (style == Style.Stretched)
+                    {
+                        key.SetValue(@"WallpaperStyle", 2.ToString());
+                        key.SetValue(@"TileWallpaper", 0.ToString());
+                    }
+                    if (style == Style.Fit)
+                    {
+                        key.SetValue(@"WallpaperStyle", 6.ToString());
+                        key.SetValue(@"TileWallpaper", 0.ToString());
+                    }
+                    if (style == Style.Fill)
+                    {
+                        key.SetValue(@"WallpaperStyle", 10.ToString());
+                        key.SetValue(@"TileWallpaper", 0.ToString());
+                    }
+                    if (style == Style.Span)
+                    {
+                        key.SetValue(@"WallpaperStyle", 22.ToString());
+                        key.SetValue(@"TileWallpaper", 0.ToString());
+                    }
+
+                    //Set Wallpaper and Update UI
+                    SystemParametersInfo(SPI_SETDESKWALLPAPER, 0, AppDataFilePath, SPIF_UPDATEINIFILE | SPIF_SENDWININICHANGE);
                 }
-
-                if (style == Style.Centered)
+                catch (UnauthorizedAccessException a)
                 {
-                    key.SetValue(@"WallpaperStyle", 0.ToString());
-                    key.SetValue(@"TileWallpaper", 0.ToString());
+                    if (Retry)
+                    {
+                        //Error re-occured, program failed.
+                        Console.WriteLine("The previous error re-occured: " + a.Message);
+                        Console.WriteLine("The program will exit with a failure code.  Please check permissions on the desired file and try again.");
+                        Environment.Exit(1);
+                    }
+                    else
+                    {
+                        //File permission error occured, but the program will retry once.
+                        Console.WriteLine("An error occured: " + a.Message);
+                        Console.WriteLine("Attempting to copy file to the temp directory and try again.");
+                        if (File.Exists(tempFile))
+                        {
+                            File.Delete(tempFile);
+                        }
+                        File.Copy(FilePath, tempFile);
+                        file = new FileInfo(tempFile);
+                        FilePath = file.FullName;
+                        Retry = true;
+                    }
                 }
-
-                if (style == Style.Tiled)
+                catch (SecurityException s)
                 {
-                    key.SetValue(@"WallpaperStyle", 0.ToString());
-                    key.SetValue(@"TileWallpaper", 1.ToString());
+                    Console.WriteLine(s.Message);
+                    Environment.Exit(1);
                 }
-
-                SystemParametersInfo(SPI_SETDESKWALLPAPER,0,tempDIR,SPIF_UPDATEINIFILE | SPIF_SENDWININICHANGE);
-            }
-            catch(SecurityException s)
-            {
-                Console.WriteLine(s.Message);
-                Environment.Exit(1);
-            }
-            catch(ArgumentNullException n)
-            {
-                Console.WriteLine(n);
-                Environment.Exit(1);
-            }
-            catch(ObjectDisposedException d)
-            {
-                Console.WriteLine(d.Message);
-                Environment.Exit(1);
-            }
-            catch (IOException IO)
-            {
-                Console.WriteLine(IO.Message);
-                Environment.Exit(1);
-            }
-            catch (ArgumentOutOfRangeException r)
-            {
-                Console.WriteLine(r.Message);
-                Environment.Exit(1);
-            }
-        }
+                catch (ArgumentNullException n)
+                {
+                    Console.WriteLine(n);
+                    Environment.Exit(1);
+                }
+                catch (ObjectDisposedException d)
+                {
+                    Console.WriteLine(d.Message);
+                    Environment.Exit(1);
+                }
+                catch (IOException IO)
+                {
+                    Console.WriteLine(IO.Message);
+                    Environment.Exit(1);
+                }
+                catch (ArgumentOutOfRangeException r)
+                {
+                    Console.WriteLine(r.Message);
+                    Environment.Exit(1);
+                }
+            } while (Retry);
+         }
     }
     class Program
     {
@@ -131,6 +202,33 @@ namespace ChangeDesktopBackground
             if (args.Length ==0)
             {
                 Ref.Help();
+            }
+            else if(args.Length == 1)
+            {
+                foreach(string arg in args)
+                {
+                    switch(arg.Substring(0,2).ToUpper())
+                    {
+                        case "/H":case "-H":case "/?":case "-?":case "/HELP":case "-HELP":
+                            Ref.Help();
+                            //The following exit command is only used as a fallback in case the help menu returns without exiting.  This should never happen.
+                            Environment.Exit(0);
+                            break;
+                    }
+                }
+            }
+            else if(args.Length > 1)
+            {
+                foreach (string arg in args)
+                {
+                    switch(arg.Substring(0,2).ToUpper())
+                    {
+                        case "/H":case "-H":case "/?":case "-?":case "/HELP":case "-HELP":
+                            Console.WriteLine("Please do not pass help switches with other switches.");
+                            Environment.Exit(1);
+                            break;
+                    }
+                }
             }
             else if (args.Length >= 1 && args.Length <= 2)
             {
@@ -183,9 +281,11 @@ namespace ChangeDesktopBackground
                         case "/P":case "-P":
                             FilePath = arg.Substring(3);
                             break;
-                        case "/H":case "-H":case "/?":case "-?":case "/HELP":case "-HELP":
-                            Ref.Help();
-                            break;
+                        default:
+                            Console.WriteLine("An incorect switch was detected.  Please make sure you are passing the proper switches in the proper format.");
+                            Console.WriteLine("You may run this program with no switches/parameters to see help options, or use /h , -help , or /? to show help text.");
+                            Environment.Exit(1);
+                        break;
                     }
                 }
                 if (!string.IsNullOrEmpty(FilePath))
@@ -199,9 +299,19 @@ namespace ChangeDesktopBackground
                 else
                 {
                     char[] c = { '\'' };
-                    string DefaultWallpaper = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location.ToString()).TrimEnd(c) + @"\wallpaper.bmp";
-                    if (File.Exists(DefaultWallpaper))
+                    string DefaultWallpaper = "";
+                    if (File.Exists(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location.ToString()).TrimEnd(c) + @"\wallpaper.bmp"))
                     {
+                        DefaultWallpaper = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location.ToString()).TrimEnd(c) + @"\wallpaper.bmp";
+                        Console.WriteLine("Changing wallpaper to " + FilePath);
+                        Console.WriteLine("Selected style is " + "\"" + style.ToString() + "\"");
+                        WP.Set(DefaultWallpaper, style);
+                        Console.WriteLine("No errors detected during execution. Please check your desktop to verify results.");
+                        Environment.Exit(0);
+                    }
+                    else if(File.Exists(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location.ToString()).TrimEnd(c) + @"\wallpaper.jpg"))
+                    {
+                        DefaultWallpaper = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location.ToString()).TrimEnd(c) + @"\wallpaper.jpg";
                         Console.WriteLine("Changing wallpaper to " + FilePath);
                         Console.WriteLine("Selected style is " + "\"" + style.ToString() + "\"");
                         WP.Set(DefaultWallpaper, style);
@@ -215,9 +325,9 @@ namespace ChangeDesktopBackground
                     }
                 }
             }
-            else
+            else if (args.Length > 2)
             {
-                Console.WriteLine(@"Too many arguments passsed.  Please check the help options (-h, -help, -?) for more information.");
+                Console.WriteLine(@"Too many arguments passsed, or arguments not passed in the proper format.  Please check the help options (-h, -help, -?) for more information.");
                 Environment.Exit(1);
             }
         }
