@@ -14,12 +14,13 @@ namespace ChangeDesktopBackground
         {
             try
             {
-                Console.WriteLine("Available Switches");
-                Console.WriteLine("You may use either a " + "-" + "or " + @"/" + " to declare your switches.");
-                Console.WriteLine("If no switches are passed, the program will search for a file titled wallpaper.bmp and attempt to set the background to that file.");
+                Console.WriteLine("");
+                Console.WriteLine("--Help Dialog--");
+                Console.WriteLine("You may use either a - or " + @"/" + " to declare your switches.");
+                Console.WriteLine("If no switches are passed, the program will search for a file titled wallpaper.bmp (or .jpg) and attempt to set the background to that file.");
                 Console.WriteLine("");
                 Console.WriteLine("--Switches--");
-                Console.WriteLine("     -p:<Path>      Path to the File Name");
+                Console.WriteLine("     -p:<Path>      Full path to the image file.");
                 Console.WriteLine("     -s:<Style>     Style type.  Must be one the following:  Tiled, Centered, Stretched, Fit, Fill, Span.  Span is only applicable on Windows 8 and higher.  Default is Fill.");
                 Console.WriteLine("     -Help          Displays help.");
                 Console.WriteLine("     -h             Displays help.");
@@ -41,11 +42,14 @@ namespace ChangeDesktopBackground
                 Console.WriteLine("");
                 Console.WriteLine("     Shows this help menu.");
                 Console.WriteLine("     changedesktopbackground.exe /help");
+                Console.WriteLine("");
                 Environment.Exit(0);
             }
             catch(IOException)
             {
+                Console.WriteLine("");
                 Console.Write("An error occured displaying help.  Ensure this module is not corrupt and that Windows is functioning properly.");
+                Console.WriteLine("");
                 Environment.Exit(1);
             }
         }
@@ -87,7 +91,14 @@ namespace ChangeDesktopBackground
                     Stream stream = new FileStream(FilePath, FileMode.Open);
                     Image img = Image.FromStream(stream);
 
-                    //Check if the given file name exists in the user's %Temp% directory.  The file will be deleted if it does exist.
+                    //Check if the given file name exists in the user's %Temp% directory.  The file will be deleted if it exists.
+                    if (File.Exists(tempFile))
+                    {
+                        File.Delete(tempFile);
+                    }
+
+                    //Reset the tempFile variable for .jpg usage.  Check for that file in the %Temp% directory and delete if it exists.
+                    tempFile = (tempFile.Remove((tempFile.Length - 3), 3) + "jpg");
                     if (File.Exists(tempFile))
                     {
                         File.Delete(tempFile);
@@ -99,7 +110,7 @@ namespace ChangeDesktopBackground
                     //Check for the default wallpaper file name in the default path.  If a file exists, it will be renamed so that it is not overwritten.  (In this case default = Microsoft default) 
                     if(File.Exists(AppDataFilePath))
                     {
-                        File.Move(AppDataFilePath, (AppDataFilePath.Replace("jpeg", "").Replace("jpg", "") + DateTime.Now.ToShortTimeString() + ".jpg"));
+                        File.Move(AppDataFilePath, (AppDataFilePath.Replace("jpeg", "").Replace("jpg", "") + DateTime.Now.ToString().Replace(@"/","-").Replace(":",".") + ".jpg"));
                     }
 
                     //Copy new wallpaper file to the Microsoft default path.  Existing file will the same name be overwritten.
@@ -146,15 +157,24 @@ namespace ChangeDesktopBackground
                     if (Retry)
                     {
                         //Error re-occured, program failed.
+                        Console.WriteLine("");
                         Console.WriteLine("The previous error re-occured: " + a.Message);
                         Console.WriteLine("The program will exit with a failure code.  Please check permissions on the desired file and try again.");
+                        Console.WriteLine("");
                         Environment.Exit(1);
                     }
                     else
                     {
                         //File permission error occured, but the program will retry once.
+                        Console.WriteLine("");
                         Console.WriteLine("An error occured: " + a.Message);
                         Console.WriteLine("Attempting to copy file to the temp directory and try again.");
+                        Console.WriteLine("");
+                        if (File.Exists(tempFile))
+                        {
+                            File.Delete(tempFile);
+                        }
+                        tempFile = Path.Combine(Path.GetTempPath(), file.Name);
                         if (File.Exists(tempFile))
                         {
                             File.Delete(tempFile);
@@ -167,27 +187,51 @@ namespace ChangeDesktopBackground
                 }
                 catch (SecurityException s)
                 {
+                    Console.WriteLine("");
                     Console.WriteLine(s.Message);
+                    Console.WriteLine("");
                     Environment.Exit(1);
                 }
                 catch (ArgumentNullException n)
                 {
+                    Console.WriteLine("");
                     Console.WriteLine(n);
-                    Environment.Exit(1);
-                }
-                catch (ObjectDisposedException d)
-                {
-                    Console.WriteLine(d.Message);
-                    Environment.Exit(1);
-                }
-                catch (IOException IO)
-                {
-                    Console.WriteLine(IO.Message);
+                    Console.WriteLine("");
                     Environment.Exit(1);
                 }
                 catch (ArgumentOutOfRangeException r)
                 {
+                    Console.WriteLine("");
                     Console.WriteLine(r.Message);
+                    Console.WriteLine("");
+                    Environment.Exit(1);
+                }
+                catch (ArgumentException arg)
+                {
+                    Console.WriteLine("");
+                    Console.WriteLine(arg.Message);
+                    Console.WriteLine("");
+                    Environment.Exit(1);
+                }
+                catch (ObjectDisposedException d)
+                {
+                    Console.WriteLine("");
+                    Console.WriteLine(d.Message);
+                    Console.WriteLine("");
+                    Environment.Exit(1);
+                }
+                catch (IOException IO)
+                {
+                    Console.WriteLine("");
+                    Console.WriteLine(IO.Message);
+                    Console.WriteLine("");
+                    Environment.Exit(1);
+                }
+                catch(Exception ex)
+                {
+                    Console.WriteLine("");
+                    Console.WriteLine(ex.Message);
+                    Console.WriteLine("");
                     Environment.Exit(1);
                 }
             } while (Retry);
@@ -199,17 +243,25 @@ namespace ChangeDesktopBackground
         {
             Refrence Ref = new Refrence();
             Wallpaper WP = new Wallpaper();
+            //Check for Help Conditions or argument overload.  If any of these conditions evaluation to yes and proceed with their execution, the end result will be the programming closing.
             if (args.Length ==0)
             {
                 Ref.Help();
+                //The following exit command is only used as a fallback in case the help menu returns without exiting.  This should never happen.
+                Environment.Exit(0);
             }
-            else if(args.Length == 1)
+            else if (args.Length == 1)
             {
-                foreach(string arg in args)
+                foreach (string arg in args)
                 {
-                    switch(arg.Substring(0,2).ToUpper())
+                    switch (arg.ToUpper())
                     {
-                        case "/H":case "-H":case "/?":case "-?":case "/HELP":case "-HELP":
+                        case "/H":
+                        case "-H":
+                        case "/?":
+                        case "-?":
+                        case "/HELP":
+                        case "-HELP":
                             Ref.Help();
                             //The following exit command is only used as a fallback in case the help menu returns without exiting.  This should never happen.
                             Environment.Exit(0);
@@ -217,83 +269,129 @@ namespace ChangeDesktopBackground
                     }
                 }
             }
-            else if(args.Length > 1)
+            else if (args.Length > 1)
             {
-                foreach (string arg in args)
+                if (args.Length > 2)
                 {
-                    switch(arg.Substring(0,2).ToUpper())
+                    Console.WriteLine("");
+                    Console.WriteLine(@"Too many arguments passsed, or arguments not passed in the proper format.  Please check the help options (-h, -help, -?) for more information.");
+                    Console.WriteLine("");
+                    Environment.Exit(1);
+                }
+                else
+                {
+                    foreach (string arg in args)
                     {
-                        case "/H":case "-H":case "/?":case "-?":case "/HELP":case "-HELP":
-                            Console.WriteLine("Please do not pass help switches with other switches.");
-                            Environment.Exit(1);
-                            break;
+                        switch (arg.ToUpper())
+                        {
+                            case "/H":
+                            case "-H":
+                            case "/?":
+                            case "-?":
+                            case "/HELP":
+                            case "-HELP":
+                                Console.WriteLine("");
+                                Console.WriteLine("Please do not pass help switches with other switches.");
+                                Console.WriteLine("");
+                                Environment.Exit(1);
+                                break;
+                        }
                     }
                 }
             }
-            else if (args.Length >= 1 && args.Length <= 2)
+
+
+
+            //If the previous checks pass, begin the primary work of the program.  
+            //This first "if" block sets the variables from the switches supplied in the command line.  If an incorrect switch is detected in this section, the program will detect this and exit.
+            if (args.Length >= 1 && args.Length <= 2)
             {
                 Wallpaper.Style style = new Wallpaper.Style();
                 style = Wallpaper.Style.Fill;
                 string FilePath = "";
                 foreach (string arg in args)
                 {
-                    switch(arg.Substring(0,2).ToUpper())
+                    string s = arg.Substring(3).ToLower();
+                    switch(arg.Substring(0,3).ToUpper())
                     {
-                        case "/S":case "-S":
-                        if(arg.Substring(3) == "Tiled")
+                        case "/S:":case "-S:":
+                            if(s == "tiled")
                             {
                                 style = Wallpaper.Style.Tiled;
                             }
-                        else if(arg.Substring(3) == "Centered")
+                            else if (s == "tile")
+                            {
+                                style = Wallpaper.Style.Tiled;
+                            }
+                            else if(s == "centered")
                             {
                                 style = Wallpaper.Style.Centered;
                             }
-                        else if(arg.Substring(3) == "Stretched")
+                            else if (s == "center")
+                            {
+                                style = Wallpaper.Style.Centered;
+                            }
+                            else if(s == "stretched")
                             {
                                 style = Wallpaper.Style.Stretched;
                             }
-                        else if(arg.Substring(3) == "Fit")
+                            else if (s == "stretch")
+                            {
+                                style = Wallpaper.Style.Stretched;
+                            }
+                            else if(s == "fit")
                             {
                                 style = Wallpaper.Style.Fit;
                             }
-                        else if(arg.Substring(3) == "Fill")
+                        else if(s == "fill")
                             {
                                 style = Wallpaper.Style.Fill;
                             }
-                        else if(arg.Substring(3) == "Span")
+                        else if(s == "span")
                             {
-                                if(Version.Parse(Environment.OSVersion.Version.ToString()) > Version.Parse("6.1.7601"))
+                                if(Version.Parse(Environment.OSVersion.Version.ToString()) >= Version.Parse("6.2.9200.0"))
                                 {
                                     style = Wallpaper.Style.Span;
                                 }
                                 else
                                 {
+                                    Console.WriteLine("");
                                     Console.WriteLine("Span style is not supported on Windows 7.  Defaulting to Fill style.");
+                                    Console.WriteLine("");
                                     style = Wallpaper.Style.Fill;
                                 }
                             }
                         else
                             {
                                 style = Wallpaper.Style.Fill;
+                                Console.WriteLine("");
                                 Console.WriteLine("An incorrect value for style was supplied.  The default of Fill will be used.");
+                                Console.WriteLine("");
                             }
                             break;
-                        case "/P":case "-P":
+                        case "/P:":case "-P:":
                             FilePath = arg.Substring(3);
                             break;
                         default:
+                            Console.WriteLine("");
                             Console.WriteLine("An incorect switch was detected.  Please make sure you are passing the proper switches in the proper format.");
                             Console.WriteLine("You may run this program with no switches/parameters to see help options, or use /h , -help , or /? to show help text.");
+                            Console.WriteLine("");
                             Environment.Exit(1);
                         break;
                     }
                 }
+
+                //If all switches are set properly, begin this section, which sets the wallpaper and style.
                 if (!string.IsNullOrEmpty(FilePath))
                 {
+                    Console.WriteLine("");
                     Console.WriteLine("Changing wallpaper to " + FilePath);
                     Console.WriteLine("Selected style is " + "\"" +style.ToString() + "\"");
+                    Console.WriteLine("");
                     WP.Set(FilePath, style);
-                    Console.WriteLine("No errors detected during execution. Please check your desktop to verify results.");
+                    Console.WriteLine("No execution errors detected. Please check your desktop to verify results.");
+                    Console.WriteLine("");
                     Environment.Exit(0);
                 }
                 else
@@ -303,32 +401,35 @@ namespace ChangeDesktopBackground
                     if (File.Exists(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location.ToString()).TrimEnd(c) + @"\wallpaper.bmp"))
                     {
                         DefaultWallpaper = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location.ToString()).TrimEnd(c) + @"\wallpaper.bmp";
-                        Console.WriteLine("Changing wallpaper to " + FilePath);
+                        Console.WriteLine("");
+                        Console.WriteLine("Changing wallpaper to " + DefaultWallpaper);
                         Console.WriteLine("Selected style is " + "\"" + style.ToString() + "\"");
+                        Console.WriteLine("");
                         WP.Set(DefaultWallpaper, style);
-                        Console.WriteLine("No errors detected during execution. Please check your desktop to verify results.");
+                        Console.WriteLine("No execution errors detected. Please check your desktop to verify results.");
+                        Console.WriteLine("");
                         Environment.Exit(0);
                     }
                     else if(File.Exists(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location.ToString()).TrimEnd(c) + @"\wallpaper.jpg"))
                     {
                         DefaultWallpaper = Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location.ToString()).TrimEnd(c) + @"\wallpaper.jpg";
-                        Console.WriteLine("Changing wallpaper to " + FilePath);
+                        Console.WriteLine("");
+                        Console.WriteLine("Changing wallpaper to " + DefaultWallpaper);
                         Console.WriteLine("Selected style is " + "\"" + style.ToString() + "\"");
+                        Console.WriteLine("");
                         WP.Set(DefaultWallpaper, style);
-                        Console.WriteLine("No errors detected during execution. Please check your desktop to verify results.");
+                        Console.WriteLine("No execution errors detected. Please check your desktop to verify results.");
+                        Console.WriteLine("");
                         Environment.Exit(0);
                     }
                     else
                     {
-                        Console.WriteLine("No wallpaper path was specified and wallpaper.bmp could not be found in the same directory. Failed to change wallpaper.");
+                        Console.WriteLine("");
+                        Console.WriteLine("No wallpaper path was specified and wallpaper.bmp/jpg could not be found in the same directory. Failed to change wallpaper.");
+                        Console.WriteLine("");
                         Environment.Exit(1);
                     }
                 }
-            }
-            else if (args.Length > 2)
-            {
-                Console.WriteLine(@"Too many arguments passsed, or arguments not passed in the proper format.  Please check the help options (-h, -help, -?) for more information.");
-                Environment.Exit(1);
             }
         }
     }
